@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using gql_netcore.Data;
 using gql_netcore.GraphQL;
+using gql_netcore.GraphQL.Commands;
+using gql_netcore.GraphQL.Platforms;
 using GraphQL.Server.Ui.Voyager;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -31,7 +33,11 @@ namespace gql_netcore
             services.AddPooledDbContextFactory<AppDbContext>(opt => opt.UseSqlServer
             (_config.GetConnectionString("sqlServer")));
 
-            services.AddGraphQLServer().AddQueryType<Query>().AddProjections();
+            services
+                .AddGraphQLServer()
+                .AddQueryType<Query>()
+                .AddType<PlatformType>()
+                .AddType<CommandType>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
