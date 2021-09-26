@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using gql_netcore.Data;
 using gql_netcore.GraphQL.Commands;
@@ -7,14 +8,18 @@ using gql_netcore.GraphQL.Platforms;
 using gql_netcore.Models;
 using HotChocolate;
 using HotChocolate.Data;
+using HotChocolate.Subscriptions;
 
 namespace gql_netcore.GraphQL
 {
     public class Mutation
     {
         [UseDbContext(typeof(AppDbContext))]
-        public async Task<AddPlatformPayload> AddPlatformAsync(AddPlatformInput input,
-        [ScopedService] AppDbContext context)
+        public async Task<AddPlatformPayload> AddPlatformAsync(
+            AddPlatformInput input,
+            [ScopedService] AppDbContext context,
+            [Service] ITopicEventSender eventSender,
+            CancellationToken cancelToken)
         {
             var platform = new Platform
             {
@@ -22,14 +27,17 @@ namespace gql_netcore.GraphQL
             };
 
             context.Platforms.Add(platform);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(cancelToken);
+            await eventSender.SendAsync(nameof(Subscription.OnPlatformAdded), platform, cancelToken);
 
             return new AddPlatformPayload(platform);
         }
 
         [UseDbContext(typeof(AppDbContext))]
-        public async Task<AddCommandPayload> AddCommandAsync(AddCommandInput input,
-         [ScopedService] AppDbContext context)
+        public async Task<AddCommandPayload> AddCommandAsync(
+            AddCommandInput input,
+            [ScopedService] AppDbContext context
+        )
         {
             var command = new Command
             {
@@ -40,7 +48,6 @@ namespace gql_netcore.GraphQL
 
             context.Commands.Add(command);
             await context.SaveChangesAsync();
-
             return new AddCommandPayload(command);
         }
 
